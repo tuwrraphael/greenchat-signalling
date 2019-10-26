@@ -4,6 +4,7 @@
   "description": "Signalling Server to establish WebRTC connections",
   "main": "index.js",
   "dependencies": {
+    "minimist": "^1.2.0",
     "ws": "^7.2.0"
   },
   "devDependencies": {},
