@@ -24,12 +24,10 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
     - run: npm run build
-    - name: Copy folder content recursively to remote
-      uses: garygrossgarten/github-action-scp@release
+    - name: Run SSH command
+      uses: garygrossgarten/github-action-ssh@v0.5.0
       with:
-        local: "./"
-        remote: "/home/signalling/signalling-server"
+        command: sudo /homes/deploy/deploy.sh
         host: hub.greenchat.me
-        username: signalling
+        username: deploy
         privateKey: ${{ secrets.SERVER_SSH_KEY }}
-
