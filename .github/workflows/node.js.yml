@@ -27,7 +27,7 @@ jobs:
     - name: Run SSH command
       uses: garygrossgarten/github-action-ssh@v0.5.0
       with:
-        command: sudo /homes/deploy/deploy.sh
+        command: sudo /home/deploy/deploy.sh
         host: hub.greenchat.me
         username: deploy
         privateKey: ${{ secrets.SERVER_SSH_KEY }}
