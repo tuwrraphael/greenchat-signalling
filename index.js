@@ -45,7 +45,6 @@ class ConnectionPool {
         c.offer = offer;
         c.expires = (+new Date()) + timeout;
         c.requested = false;
-        console.log(this.connections);
         return c;
     }
 
@@ -76,6 +75,8 @@ class ConnectionPool {
 
 let pool = new ConnectionPool();
 
+let hubs = [];
+
 wss.on("connection", function connection(ws) {
     let client = { ws };
     console.log("connected");
@@ -87,10 +88,44 @@ wss.on("connection", function connection(ws) {
                 client.id = parsed.id;
                 break;
             }
+            case "get_hubs": {
+                client.ws.send(JSON.stringify({
+                    type: "hubs",
+                    hubs
+                }));
+                break;
+            }
+            case "announce_hub": {
+                hubs.push(client.id);
+                break;
+            }
+            case "connect_hub": {
+                let { hubId, offer, connectionId, timeout } = parsed;
+                if (!hubs.find(id => id == hubId)) {
+                    client.ws.send(JSON.stringify({
+                        type: "hub_not_found",
+                        hubId,
+                        connectionId
+                    }));
+                } else {
+                    client.ws.send(JSON.stringify({
+                        type: "connection_initialized",
+                        connectionId
+                    }));
+                    pool.initialize(connectionId, client.id, offer, timeout || 120000);
+                    let hub = clients.find(v => v.id == hubId);
+                    if (hub) {
+                        hub.ws.send(JSON.stringify({
+                            type: "connect_hub",
+                            connectionId
+                        }));
+                    }
+                }
+                break;
+            }
             case "initialize_connection":
                 {
-                    let { offer,
-                        connectionId, timeout } = parsed;
+                    let { offer, connectionId, timeout } = parsed;
                     pool.initialize(connectionId, client.id, offer, timeout);
                     client.ws.send(JSON.stringify({
                         type: "connection_initialized",
@@ -159,10 +194,12 @@ wss.on("connection", function connection(ws) {
     ws.on("error", function (msg) {
         console.error("ws error", msg);
         clients = clients.filter(v => v.ws != ws);
+        hubs = hubs.filter(id => id != client.id);
     });
     ws.on("close", function () {
         console.log("ws closed");
         clients = clients.filter(v => v.ws != ws);
+        hubs = hubs.filter(id => id != client.id);
         for (let c of clients) {
             c.ws.send(JSON.stringify({ type: "client_left", id: client.id }));
         }
