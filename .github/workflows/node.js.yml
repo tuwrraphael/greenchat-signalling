@@ -31,5 +31,5 @@ jobs:
         SOURCE: "dist/"
         REMOTE_HOST: hub.greenchat.me
         REMOTE_USER: signalling
-        TARGET: ./signalling-server
+        TARGET: /home/signalling/signalling-server
     
