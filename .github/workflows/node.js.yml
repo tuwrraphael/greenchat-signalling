@@ -24,12 +24,12 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
     - run: npm run build
-    - name: Deploy to Staging server
-      uses: easingthemes/ssh-deploy@v2.0.7
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
-        SOURCE: "dist/"
-        REMOTE_HOST: hub.greenchat.me
-        REMOTE_USER: signalling
-        TARGET: /home/signalling/signalling-server
-    
+    - name: Copy folder content recursively to remote
+      uses: garygrossgarten/github-action-scp@release
+      with:
+        local: "./"
+        remote: "/home/signalling/signalling-server"
+        host: hub.greenchat.me
+        username: signalling
+        privateKey: ${{ secrets.SERVER_SSH_KEY }}
+
