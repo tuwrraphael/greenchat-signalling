@@ -8,11 +8,12 @@ export function startServer() {
     let args = minimist(process.argv.slice(2), {
         default: {
             private: null,
-            public: null
+            public: null,
+            port: 33713
         }
     });
     let opts = {
-        port: 33713
+        port: args.port
     };
 
     if (args.private && args.public) {
