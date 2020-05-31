@@ -1,9 +1,9 @@
-const fs = require('fs');
-const minimist = require('minimist');
-const WebSocket = require('ws');
-const https = require('https');
+import * as fs from "fs";
+import minimist from "minimist";
+import * as WebSocket from "ws";
+import * as https from "https";
 
-module.exports = function startServer() {
+export function startServer() {
 
     let args = minimist(process.argv.slice(2), {
         default: {
@@ -21,7 +21,8 @@ module.exports = function startServer() {
         let certificate = fs.readFileSync(args.public, 'utf8');
         let httpsServer = https.createServer({ key: privateKey, cert: certificate });
         httpsServer.listen(opts.port);
-        opts = { server: httpsServer };
+        let o = { server: httpsServer };
+        return new WebSocket.Server(o);
     }
 
     return new WebSocket.Server(opts);

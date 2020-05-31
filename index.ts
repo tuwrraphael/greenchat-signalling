@@ -1,87 +1,25 @@
-const startServer = require("./start-server");
+import { startServer } from "./startServer";
+import { ConnectionPool } from "./ConnectionPool";
 
 var wss = startServer();
 
-let clients = [];
-
-class IceCandidates {
-    constructor() {
-        this.c = {};
-    }
-
-    *getForPeer(peerId) {
-        if (this.c[peerId]) {
-            for (let c of this.c[peerId]) {
-                yield c;
-            }
-        }
-    }
-
-    add(peerId, candidate) {
-        if (!this.c[peerId]) {
-            this.c[peerId] = [];
-        }
-        this.c[peerId].push(candidate);
-    }
+class WsClient {
+    id!: string;
+    ws: any;
 }
 
-class ConnectionPool {
-    constructor() {
-        this.connections = [];
-    }
-
-    create(connectionId) {
-        let c = { iceCandidates: new IceCandidates(), id: connectionId };
-        this.connections.push(c);
-        return c;
-    }
-
-    initialize(connectionId, offeringPeer, offer, timeout) {
-        let c = this.connections.find(d => d.id == connectionId);
-        if (!c) {
-            c = this.create(connectionId);
-        }
-        c.offeringPeer = offeringPeer;
-        c.offer = offer;
-        c.expires = (+new Date()) + timeout;
-        c.requested = false;
-        return c;
-    }
-
-    request(connectionId, acceptingPeer) {
-        let c = this.connections.find(d => d.id == connectionId);
-        if (!c || c.requested || c.expires < +new Date()) {
-            return null;
-        }
-        else {
-            c.requested = true;
-            c.acceptingPeer = acceptingPeer;
-        }
-        return c;
-    }
-
-    find(connectionId) {
-        return this.connections.find(d => d.id == connectionId);
-    }
-
-    findOrAdd(connectionId) {
-        let c = this.connections.find(d => d.id == connectionId);
-        if (c) {
-            return c;
-        }
-        return this.create(connectionId);
-    }
-}
+let clients: WsClient[] = [];
 
 let pool = new ConnectionPool();
 
-let hubs = [];
+let hubs: string[] = [];
 
 wss.on("connection", function connection(ws) {
-    let client = { ws };
+    let client = new WsClient();
+    client.ws = ws;
     console.log("connected");
     clients.push(client);
-    ws.on("message", function incoming(message) {
+    ws.on("message", function incoming(message: string) {
         let parsed = JSON.parse(message);
         switch (parsed.type) {
             case "connected": {
@@ -162,13 +100,18 @@ wss.on("connection", function connection(ws) {
                 let { answer,
                     connectionId } = parsed;
                 let connection = pool.find(connectionId);
-                let peer = clients.find(v => v.id == connection.offeringPeer);
-                if (null != peer) {
-                    peer.ws.send(JSON.stringify({
-                        type: "connection_accepted",
-                        connectionId,
-                        answer
-                    }));
+                if (connection) {
+                    let offeringPeer = connection.offeringPeer;
+                    if (offeringPeer) {
+                        let peer = clients.find(v => v.id == offeringPeer);
+                        if (null != peer) {
+                            peer.ws.send(JSON.stringify({
+                                type: "connection_accepted",
+                                connectionId,
+                                answer
+                            }));
+                        }
+                    }
                 }
                 break;
             }
